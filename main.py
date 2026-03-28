@@ -1,3 +1,5 @@
+import csv
+import io
 import logging
 from typing import AsyncGenerator
 
@@ -8,6 +10,7 @@ from pydantic import BaseModel
 
 import config
 from agent import Agent
+from tools.leads import get_lead_store
 
 # Logging setup
 logging.basicConfig(
@@ -17,9 +20,9 @@ logging.basicConfig(
 logger = logging.getLogger("main")
 
 app = FastAPI(
-    title="AI Agent API",
-    description="Claude-powered AI agent with web search, scraping, and code execution",
-    version="1.0.0",
+    title="Lead Scraping Agent API",
+    description="Claude-powered lead scraping agent — trouve et exporte des leads qualifiés",
+    version="2.0.0",
 )
 
 agent = Agent()
@@ -83,13 +86,37 @@ async def chat_stream(req: ChatRequest):
     return StreamingResponse(generate(), media_type="text/event-stream")
 
 
+@app.get("/leads/download")
+async def download_leads():
+    """Télécharger les derniers leads extraits en CSV."""
+    leads = get_lead_store()
+    if not leads:
+        raise HTTPException(status_code=404, detail="Aucun lead disponible. Demandez d'abord à l'agent de trouver des leads.")
+
+    fieldnames = ["name", "company", "email", "phone", "website", "source"]
+    output = io.StringIO()
+    writer = csv.DictWriter(output, fieldnames=fieldnames, extrasaction="ignore")
+    writer.writeheader()
+    for lead in leads:
+        writer.writerow({k: lead.get(k, "") for k in fieldnames})
+
+    content = output.getvalue().encode("utf-8-sig")  # UTF-8 BOM pour Excel
+
+    return StreamingResponse(
+        io.BytesIO(content),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=leads.csv"},
+    )
+
+
 @app.get("/health")
 async def health():
     return {
         "status": "ok",
         "model": config.MODEL,
         "api_key_set": bool(config.ANTHROPIC_API_KEY),
-        "tools": ["search_web", "scrape_url", "run_python"],
+        "tools": ["search_web", "scrape_url", "extract_leads", "export_leads_csv", "run_python"],
+        "leads_in_store": len(get_lead_store()),
     }
 
 
@@ -140,10 +167,11 @@ HTML_UI = """<!DOCTYPE html>
   <h1>AI Agent</h1>
   <span class="badge">Claude</span>
   <span class="badge" style="background:#0ea5e9">Web Search</span>
-  <span class="badge" style="background:#10b981">Code</span>
+  <span class="badge" style="background:#10b981">Lead Scraping</span>
+  <span class="badge" style="background:#f59e0b">CSV Export</span>
 </header>
 <div id="chat">
-  <div class="msg agent">Bonjour! Je suis votre agent AI. Je peux chercher sur le web, lire des pages, et exécuter du code Python. Comment puis-je vous aider?</div>
+  <div class="msg agent">Bonjour! Je suis votre agent de scraping de leads. Dites-moi quel type de leads vous cherchez — secteur, ville, critères — et je vais les trouver et les exporter en CSV.\n\nExemples :\n• "Trouve des plombiers à Paris avec leur email"\n• "Cherche des agences immobilières à Lyon"\n• "Leads de restaurants à Montréal"</div>
 </div>
 <footer>
   <form id="form">
