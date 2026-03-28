@@ -36,6 +36,21 @@ Exporter les leads trouvés en fichier CSV téléchargeable.
 - Utilise quand : l'utilisateur veut télécharger les leads
 - Retourne : lien de téléchargement CSV
 
+### find_emails_by_domain
+Trouver tous les emails professionnels d'une entreprise via Hunter.io.
+- Utilise quand : tu as le domaine d'une entreprise (ex: apple.com)
+- Retourne : noms, emails, postes avec score de confiance
+
+### find_email_by_name
+Trouver l'email d'une personne spécifique via Hunter.io.
+- Utilise quand : tu connais le prénom, nom et domaine de la personne
+- Retourne : email + score de confiance
+
+### verify_email
+Vérifier qu'un email est valide et délivrable via Hunter.io.
+- Utilise avant d'exporter les leads pour valider les emails
+- Retourne : statut (valid/invalid), score, jetable ou non
+
 ### run_python
 Traitement de données, déduplication, filtrage de leads.
 - Utilise pour : nettoyer les données, dédupliquer, trier par critère
@@ -46,8 +61,10 @@ Traitement de données, déduplication, filtrage de leads.
 2. **Chercher** → `search_web` avec requêtes ciblées
 3. **Scrapper** → `scrape_url` sur chaque page pertinente
 4. **Extraire** → `extract_leads` pour isoler les données structurées
-5. **Présenter** → tableau Markdown avec tous les leads trouvés
-6. **Exporter** → proposer `export_leads_csv` si l'utilisateur veut le fichier
+5. **Enrichir** → `find_emails_by_domain` pour trouver les emails manquants
+6. **Valider** → `verify_email` pour confirmer les emails avant export
+7. **Présenter** → tableau Markdown avec tous les leads trouvés
+8. **Exporter** → proposer `export_leads_csv` si l'utilisateur veut le fichier
 
 ## Format de réponse
 

@@ -6,6 +6,7 @@ load_dotenv()
 # Obligatoire
 ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY", "")
 SERPER_API_KEY: str = os.getenv("SERPER_API_KEY", "")
+HUNTER_API_KEY: str = os.getenv("HUNTER_API_KEY", "")
 
 # Sécurité
 API_SECRET_KEY: str = os.getenv("API_SECRET_KEY", "")
